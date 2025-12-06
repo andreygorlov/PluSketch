@@ -29,6 +29,9 @@ export default function Toolbar({ zoomControlsRef, zoom = 1 }: ToolbarProps) {
     loadProject,
     hasUnsavedChanges,
     setCreatingElementType,
+    creatingElementType,
+    toolMode,
+    setToolMode,
     addWall,
     selectedElementIds,
     deleteElement,
@@ -398,6 +401,23 @@ export default function Toolbar({ zoomControlsRef, zoom = 1 }: ToolbarProps) {
       
       <div className="h-6 w-px bg-gray-600 mx-2" />
       
+      {/* כפתור בחירה */}
+      <button
+        onClick={() => setToolMode('select')}
+        className={`px-4 py-2 rounded transition-colors flex items-center justify-center ${
+          toolMode === 'select'
+            ? 'bg-blue-500 text-white'
+            : 'bg-gray-700 hover:bg-gray-600 text-white'
+        }`}
+        title="בחר אלמנטים"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 15l-2 5L9 9l11 4-5 2zm0 0l5 5M7.188 2.239l.777 2.897M5.136 7.965l-2.898-.777M13.95 4.05l-2.122 2.122m-5.657 5.656l-2.12 2.122" />
+        </svg>
+      </button>
+      
+      <div className="h-6 w-px bg-gray-600 mx-2" />
+      
       {/* כפתורי יצירת אלמנטים */}
       <button
         onClick={() => setCreatingElementType('rectangle')}
@@ -424,6 +444,20 @@ export default function Toolbar({ zoomControlsRef, zoom = 1 }: ToolbarProps) {
       >
         <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
           <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M12 6v14" />
+        </svg>
+      </button>
+      
+      <button
+        onClick={() => setCreatingElementType('manualDimension')}
+        className={`px-4 py-2 rounded transition-colors flex items-center justify-center ${
+          creatingElementType === 'manualDimension'
+            ? 'bg-blue-500 text-white'
+            : 'bg-gray-600 hover:bg-gray-700 text-white'
+        }`}
+        title="הוסף מידה ידנית"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01" />
         </svg>
       </button>
       

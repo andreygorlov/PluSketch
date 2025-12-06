@@ -11,7 +11,7 @@ interface ElementRendererProps {
 
 const ElementRenderer = forwardRef<SVGGElement, ElementRendererProps>(
   ({ element, scale = 1, selected = false, viewType = 'front' }, ref) => {
-    const { selectElement } = useProjectStore();
+    const { selectElement, toolMode } = useProjectStore();
     
     // משתמש במיקום הישיר של האלמנט
     const x = toPixels(element.x, element.unit, scale);
@@ -20,9 +20,12 @@ const ElementRenderer = forwardRef<SVGGElement, ElementRendererProps>(
 
     const handleClick = (e: React.MouseEvent) => {
       e.stopPropagation();
-      // Ctrl+Click או Cmd+Click (Mac) = multi-select
-      const multiSelect = e.ctrlKey || e.metaKey;
-      selectElement(element.id, multiSelect);
+      // בחירה רק במצב select
+      if (toolMode === 'select') {
+        // Ctrl+Click או Cmd+Click (Mac) = multi-select
+        const multiSelect = e.ctrlKey || e.metaKey;
+        selectElement(element.id, multiSelect);
+      }
     };
 
     const transform = rotation
@@ -49,7 +52,7 @@ const ElementRenderer = forwardRef<SVGGElement, ElementRendererProps>(
             opacity={0.7}
             transform={transform}
             onClick={handleClick}
-            style={{ cursor: 'move' }}
+            style={{ cursor: toolMode === 'select' ? 'pointer' : 'default' }}
           />
         );
         break;
@@ -67,7 +70,7 @@ const ElementRenderer = forwardRef<SVGGElement, ElementRendererProps>(
             opacity={0.7}
             transform={transform}
             onClick={handleClick}
-            style={{ cursor: 'move' }}
+            style={{ cursor: toolMode === 'select' ? 'pointer' : 'default' }}
           />
         );
         break;
@@ -81,7 +84,7 @@ const ElementRenderer = forwardRef<SVGGElement, ElementRendererProps>(
             fontSize={element.fontSize || 16}
             transform={transform}
             onClick={handleClick}
-            style={{ cursor: 'move' }}
+            style={{ cursor: toolMode === 'select' ? 'pointer' : 'default' }}
           >
             {element.text}
           </text>

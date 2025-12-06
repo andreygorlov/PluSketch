@@ -1,6 +1,7 @@
 import { ReactNode, useRef, useEffect, useState, forwardRef, useCallback } from 'react';
 import { isDraggingRef, justFinishedDraggingRef } from '../../hooks/useDrag';
 import { screenToSVG } from '../../utils/mouseCoordinates';
+import { toPixels } from '../../utils/units';
 
 export interface ZoomControls {
   zoomIn: () => void;
@@ -19,6 +20,8 @@ interface SVGCanvasProps {
   onSelectionBox?: (rect: { x: number; y: number; width: number; height: number }) => void;
   zoomControlsRef?: React.MutableRefObject<ZoomControls | null>;
   onZoomChange?: (zoom: number) => void;
+  creatingElementType?: 'rectangle' | 'circle' | 'text' | 'manualDimension' | null;
+  toolMode?: 'select' | 'create' | null;
 }
 
 const SVGCanvas = forwardRef<SVGSVGElement, SVGCanvasProps>(({
@@ -30,6 +33,8 @@ const SVGCanvas = forwardRef<SVGSVGElement, SVGCanvasProps>(({
   onSelectionBox,
   zoomControlsRef,
   onZoomChange,
+  creatingElementType,
+  toolMode,
 }, ref) => {
   const internalRef = useRef<SVGSVGElement>(null);
   const svgRef = (ref || internalRef) as React.RefObject<SVGSVGElement>;
@@ -160,12 +165,18 @@ const SVGCanvas = forwardRef<SVGSVGElement, SVGCanvasProps>(({
       if ((isSVG || isGrid) && !isDraggingRef.current) {
         e.preventDefault();
         
-        // אם Shift לא לחוץ, נתחיל מלבן בחירה במקום Pan
-        if (!e.shiftKey && onSelectionBox) {
-          const svgPoint = getSVGPoint(e.clientX, e.clientY);
-          setIsSelecting(true);
-          setSelectionStart(svgPoint);
-          setSelectionEnd(svgPoint);
+        // אם Shift לא לחוץ ומצב select, נתחיל מלבן בחירה במקום Pan
+        if (!e.shiftKey && onSelectionBox && toolMode === 'select') {
+          const svg = svgRef.current;
+          if (svg) {
+            // שימוש ישיר ב-screenToSVG כדי לוודא שהמיקום מדויק
+            const svgPoint = screenToSVG(svg, e.clientX, e.clientY);
+            if (svgPoint) {
+              setIsSelecting(true);
+              setSelectionStart(svgPoint);
+              setSelectionEnd(svgPoint);
+            }
+          }
         } else {
           // אחרת, Pan כרגיל
           setIsPanning(true);
@@ -174,7 +185,7 @@ const SVGCanvas = forwardRef<SVGSVGElement, SVGCanvasProps>(({
         }
       }
     }
-  }, [onSelectionBox, getSVGPoint]);
+  }, [onSelectionBox, getSVGPoint, toolMode]);
 
   // סיום פאן או בחירה
   const handleMouseUp = useCallback((e?: MouseEvent) => {
@@ -397,8 +408,13 @@ const SVGCanvas = forwardRef<SVGSVGElement, SVGCanvasProps>(({
     } else if (isSelecting) {
       // event listeners למלבן בחירה
       const handleGlobalMouseMove = (e: MouseEvent) => {
-        const svgPoint = getSVGPoint(e.clientX, e.clientY);
-        setSelectionEnd(svgPoint);
+        const svg = svgRef.current;
+        if (!svg) return;
+        // שימוש ישיר ב-screenToSVG כדי לוודא שהמיקום מדויק
+        const svgPoint = screenToSVG(svg, e.clientX, e.clientY);
+        if (svgPoint) {
+          setSelectionEnd(svgPoint);
+        }
       };
 
       const handleGlobalMouseUp = (e: MouseEvent) => {
@@ -413,7 +429,7 @@ const SVGCanvas = forwardRef<SVGSVGElement, SVGCanvasProps>(({
         window.removeEventListener('mouseup', handleGlobalMouseUp);
       };
     }
-  }, [isPanning, isSelecting, panStart, zoom, panX, panY, constrainPan, handleMouseUp, getSVGPoint]);
+  }, [isPanning, isSelecting, panStart, zoom, panX, panY, constrainPan, handleMouseUp, svgRef]);
 
 
   return (
@@ -434,19 +450,32 @@ const SVGCanvas = forwardRef<SVGSVGElement, SVGCanvasProps>(({
         <g clipPath="url(#canvas-clip)">
           {children}
           {/* מלבן בחירה */}
-          {isSelecting && selectionStart && selectionEnd && (
-            <rect
-              x={Math.min(selectionStart.x, selectionEnd.x)}
-              y={Math.min(selectionStart.y, selectionEnd.y)}
-              width={Math.abs(selectionEnd.x - selectionStart.x)}
-              height={Math.abs(selectionEnd.y - selectionStart.y)}
-              fill="rgba(59, 130, 246, 0.1)"
-              stroke="#3b82f6"
-              strokeWidth={2}
-              strokeDasharray="5,5"
-              pointerEvents="none"
-            />
-          )}
+          {isSelecting && selectionStart && selectionEnd && (() => {
+            // screenToSVG מחזיר קואורדינטות ב-viewBox coordinates (pixels)
+            // האלמנטים מוצגים ב-pixels של הקנבס המלא (לאחר המרה מ-SVG coordinates)
+            // אז המלבן בחירה צריך להיות ב-viewBox coordinates (כי זה מה ש-screenToSVG מחזיר)
+            // אבל האלמנטים מוצגים ב-pixels של הקנבס המלא, אז צריך להמיר
+            
+            // הקואורדינטות כבר ב-viewBox coordinates (pixels), אז פשוט משתמשים בהם ישירות
+            const x1 = selectionStart.x;
+            const y1 = selectionStart.y;
+            const x2 = selectionEnd.x;
+            const y2 = selectionEnd.y;
+            
+            return (
+              <rect
+                x={Math.min(x1, x2)}
+                y={Math.min(y1, y2)}
+                width={Math.abs(x2 - x1)}
+                height={Math.abs(y2 - y1)}
+                fill="rgba(59, 130, 246, 0.1)"
+                stroke="#3b82f6"
+                strokeWidth={2 / (zoom || 1)}
+                strokeDasharray={`${5 / (zoom || 1)},${5 / (zoom || 1)}`}
+                pointerEvents="none"
+              />
+            );
+          })()}
         </g>
       </svg>
     </div>

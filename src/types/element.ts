@@ -1,4 +1,4 @@
-export type ElementType = 'rectangle' | 'circle' | 'text';
+export type ElementType = 'rectangle' | 'circle' | 'text' | 'manualDimension';
 
 export type Unit = 'cm' | 'm';
 
@@ -31,5 +31,14 @@ export interface TextElement extends BaseElement {
   fontSize?: number;
 }
 
-export type Element = RectangleElement | CircleElement | TextElement;
+export interface ManualDimensionElement extends BaseElement {
+  type: 'manualDimension';
+  x1: number; // נקודת התחלה X
+  y1: number; // נקודת התחלה Y
+  x2: number; // נקודת סיום X
+  y2: number; // נקודת סיום Y
+  value: number; // ערך המידה (ביחידות של האלמנט)
+}
+
+export type Element = RectangleElement | CircleElement | TextElement | ManualDimensionElement;
 

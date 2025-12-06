@@ -1,7 +1,7 @@
 import { useRef, useEffect } from 'react';
 import { Element } from '../types/element';
 import { useProjectStore } from '../store';
-import { snapPoint, snapToElements } from '../utils/snap';
+import { snapPoint, snapToElements, SnapResult } from '../utils/snap';
 import { screenToSVG } from '../utils/mouseCoordinates';
 
 // ref גלובלי למעקב אחרי גרירה (משותף עם SVGCanvas)
@@ -12,14 +12,15 @@ export const justFinishedDraggingRef = { current: false };
 interface UseDragOptions {
   element: Element;
   enabled?: boolean;
+  zoom?: number; // זום נוכחי לשימוש ב-snap threshold דינמי
   onDragStart?: () => void; // כשמתחיל גרירה
-  onDragMove?: (x: number, y: number, snapInfo?: { type: string; value: number } | null) => void; // מיקום זמני במהלך הגרירה
+  onDragMove?: (x: number, y: number, snapResult?: SnapResult | null) => void; // מיקום זמני במהלך הגרירה עם snap info
   onDragEnd?: (x: number, y: number, isDuplicating?: boolean) => void; // עדכון סופי כשמשחררים, isDuplicating = true אם CTRL לחוץ
 }
 
 export function useDrag(
   elementRef: React.RefObject<SVGElement>,
-  { element, enabled = true, onDragStart, onDragMove, onDragEnd }: UseDragOptions
+  { element, enabled = true, zoom = 1, onDragStart, onDragMove, onDragEnd }: UseDragOptions
 ) {
   const { currentProject, elements } = useProjectStore();
   const isDragging = useRef(false);
@@ -34,6 +35,9 @@ export function useDrag(
   const onDragEndRef = useRef(onDragEnd);
   const currentProjectRef = useRef(currentProject);
   const elementsRef = useRef(elements);
+  const zoomRef = useRef(zoom);
+  const lastSnapTime = useRef(0);
+  const SNAP_THROTTLE_MS = 16; // ~60fps
 
   // עדכון refs כשהערכים משתנים
   useEffect(() => {
@@ -43,7 +47,8 @@ export function useDrag(
     onDragEndRef.current = onDragEnd;
     currentProjectRef.current = currentProject;
     elementsRef.current = elements;
-  }, [element, onDragStart, onDragMove, onDragEnd, currentProject, elements]);
+    zoomRef.current = zoom;
+  }, [element, onDragStart, onDragMove, onDragEnd, currentProject, elements, zoom]);
 
   useEffect(() => {
     if (!enabled || !elementRef.current) return;
@@ -100,16 +105,27 @@ export function useDrag(
       const multipliedDeltaY = deltaY * 2.61;
       
       // המיקום החדש הוא המיקום ההתחלתי של האלמנט + הדלתא המוכפל
-      // ללא snap במהלך הגרירה כדי לשמור על ביצועים טובים
       let newX = elementStartPos.current.x + multipliedDeltaX;
       let newY = elementStartPos.current.y + multipliedDeltaY;
+      
+      // Snap במהלך הגרירה - עם throttling לביצועים
+      const now = Date.now();
+      let snapResult: SnapResult | null = null;
+      
+      if (now - lastSnapTime.current >= SNAP_THROTTLE_MS) {
+        const otherElements = elementsRef.current.filter(el => el.id !== elementRef_stable.current.id);
+        snapResult = snapToElements(newX, newY, elementRef_stable.current, otherElements, undefined, zoomRef.current);
+        newX = snapResult.x;
+        newY = snapResult.y;
+        lastSnapTime.current = now;
+      }
       
       // שמירת המיקום האחרון
       lastPos.current = { x: newX, y: newY };
       hasMoved.current = true; // סימן שהייתה תנועה
       
-      // במהלך הגרירה - מעדכנים את המיקום הוויזואלי ללא snap (מהיר יותר)
-      onDragMoveRef.current?.(newX, newY, null);
+      // במהלך הגרירה - מעדכנים את המיקום הוויזואלי עם snap info
+      onDragMoveRef.current?.(newX, newY, snapResult);
     };
 
     const handleMouseUp = (e: MouseEvent) => {
@@ -126,7 +142,7 @@ export function useDrag(
         
         // Snap to elements - גם בסוף (למקרה שלא היה snap במהלך הגרירה)
         const otherElements = elementsRef.current.filter(el => el.id !== elementRef_stable.current.id);
-        const snapResult = snapToElements(finalX, finalY, elementRef_stable.current, otherElements);
+        const snapResult = snapToElements(finalX, finalY, elementRef_stable.current, otherElements, undefined, zoomRef.current);
         finalX = snapResult.x;
         finalY = snapResult.y;
         

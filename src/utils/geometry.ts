@@ -32,6 +32,18 @@ export function getElementBounds(element: Element): {
         width: estimatedWidth,
         height: fontSize,
       };
+    case 'manualDimension':
+      // מידה ידנית - נשתמש בשתי הנקודות
+      const minX = Math.min(element.x1, element.x2);
+      const minY = Math.min(element.y1, element.y2);
+      const maxX = Math.max(element.x1, element.x2);
+      const maxY = Math.max(element.y1, element.y2);
+      return {
+        x: minX,
+        y: minY,
+        width: maxX - minX,
+        height: maxY - minY,
+      };
     default:
       return { x: 0, y: 0, width: 0, height: 0 };
   }

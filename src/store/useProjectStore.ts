@@ -11,6 +11,7 @@ interface ProjectState {
   elements: Element[];
   selectedElementIds: string[]; // רשימת ID של אלמנטים נבחרים
   creatingElementType: ElementType | null;
+  toolMode: 'select' | 'create' | null; // מצב הכלי: select = בחירה, create = יצירה
   viewType: 'front';
   showDimensionsTable: boolean;
   showDimensions: boolean;
@@ -23,6 +24,7 @@ interface ProjectState {
   selectElement: (id: string | null, multiSelect?: boolean) => void;
   toggleSelectElement: (id: string) => void;
   setCreatingElementType: (type: ElementType | null) => void;
+  setToolMode: (mode: 'select' | 'create' | null) => void;
   loadProject: (project: Project) => void;
   newProject: () => void;
   getElement: (id: string) => Element | undefined;
@@ -64,6 +66,7 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
   elements: [],
   selectedElementIds: [],
   creatingElementType: null,
+  toolMode: 'select', // ברירת מחדל - מצב בחירה
   viewType: 'front',
   showDimensionsTable: false,
   showDimensions: true,
@@ -145,7 +148,22 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
   },
   
   setCreatingElementType: (type) => {
-    set({ creatingElementType: type, selectedElementIds: [] });
+    if (type) {
+      set({ creatingElementType: type, toolMode: 'create', selectedElementIds: [] });
+    } else {
+      set({ creatingElementType: null, toolMode: 'select' });
+    }
+  },
+  
+  setToolMode: (mode) => {
+    if (mode === 'select') {
+      set({ toolMode: 'select', creatingElementType: null });
+    } else if (mode === 'create') {
+      // לא משנה את creatingElementType, רק את toolMode
+      set({ toolMode: 'create' });
+    } else {
+      set({ toolMode: null, creatingElementType: null });
+    }
   },
   
   getElement: (id) => {

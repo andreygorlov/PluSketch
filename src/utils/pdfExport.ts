@@ -202,6 +202,8 @@ export async function exportToPDF(
           return `Ø ${formatDimension(diameter, element.unit)}`;
         case 'text':
           return element.text;
+        case 'manualDimension':
+          return formatDimension(element.value, element.unit);
         default:
           return '-';
       }
@@ -212,6 +214,8 @@ export async function exportToPDF(
         case 'rectangle': return 'מלבן';
         case 'circle': return 'עיגול';
         case 'text': return 'טקסט';
+        case 'manualDimension': return 'מידה ידנית';
+        default: return '-';
       }
     };
 

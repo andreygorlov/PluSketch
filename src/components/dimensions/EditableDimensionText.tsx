@@ -122,7 +122,7 @@ export default function EditableDimensionText({
       fill="#000"
       textAnchor="middle"
       fontWeight="bold"
-      style={{ cursor: 'text', pointerEvents: 'all' }}
+      style={{ cursor: 'text', pointerEvents: 'all', userSelect: 'none' }}
       onClick={handleClick}
     >
       {displayText}

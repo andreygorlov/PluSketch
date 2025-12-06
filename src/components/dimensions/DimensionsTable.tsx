@@ -10,10 +10,14 @@ export default function DimensionsTable() {
 
   // יצירת שמות אוטומטיים
   const elementsWithNames = useMemo(() => {
-    const typeCounts: Record<string, number> = { rectangle: 0, circle: 0, text: 0 };
+    const typeCounts: Record<string, number> = { rectangle: 0, circle: 0, text: 0, manualDimension: 0 };
     
     return elements.map((element) => {
-      const typeLabel = element.type === 'rectangle' ? 'קיר' : element.type === 'circle' ? 'עיגול' : 'טקסט';
+      const typeLabel = 
+        element.type === 'rectangle' ? 'קיר' : 
+        element.type === 'circle' ? 'עיגול' : 
+        element.type === 'text' ? 'טקסט' :
+        element.type === 'manualDimension' ? 'מידה ידנית' : 'אלמנט';
       typeCounts[element.type]++;
       const autoName = `${typeLabel} ${typeCounts[element.type]}`;
       
@@ -33,6 +37,8 @@ export default function DimensionsTable() {
         return `Ø ${formatDimension(diameter, element.unit, displayUnit)}`;
       case 'text':
         return element.text || '-';
+      case 'manualDimension':
+        return formatDimension(element.value, element.unit, displayUnit);
       default:
         return '-';
     }
@@ -46,6 +52,8 @@ export default function DimensionsTable() {
         return 'עיגול';
       case 'text':
         return 'טקסט';
+      case 'manualDimension':
+        return 'מידה ידנית';
       default:
         return '-';
     }

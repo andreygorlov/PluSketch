@@ -1,0 +1,45 @@
+services:
+  api:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.server.dev
+    ports:
+      - "3001:3001"
+    volumes:
+      - api_data:/app/data
+      # Mount source code for hot reload (overwrite container files)
+      - ../server/src:/app/src
+      - ../server/tsconfig.json:/app/tsconfig.json
+      - ../server/package.json:/app/package.json
+    restart: unless-stopped
+    environment:
+      - PORT=3001
+      - NODE_ENV=development
+
+  web:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.dev
+    ports:
+      - "5173:5173"
+    volumes:
+      # Mount source code for hot reload (overwrite container files)
+      - ../src:/app/src
+      - ../public:/app/public
+      - ../index.html:/app/index.html
+      - ../vite.config.ts:/app/vite.config.ts
+      - ../tsconfig.json:/app/tsconfig.json
+      - ../tsconfig.node.json:/app/tsconfig.node.json
+      - ../tailwind.config.js:/app/tailwind.config.js
+      - ../postcss.config.js:/app/postcss.config.js
+      - ../package.json:/app/package.json
+    depends_on:
+      - api
+    restart: unless-stopped
+    environment:
+      - NODE_ENV=development
+      - VITE_API_URL=http://api:3001
+
+volumes:
+  api_data:
+

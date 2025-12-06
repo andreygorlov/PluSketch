@@ -1,0 +1,27 @@
+FROM node:20-alpine
+
+WORKDIR /app
+
+# Copy package files
+COPY server/package*.json ./
+RUN npm install
+
+# Copy tsconfig (will be overwritten by volume in dev mode)
+COPY server/tsconfig.json ./
+
+# Copy source code (will be overwritten by volume in dev mode)
+COPY server/src ./src
+
+# Create data directory
+RUN mkdir -p /app/data
+
+# Set data directory environment variable
+ENV DATA_DIR=/app/data
+
+# Expose port
+EXPOSE 3001
+
+# Start with tsx watch for hot reload
+# Note: tsx watch monitors file changes automatically
+CMD ["npm", "run", "dev"]
+
